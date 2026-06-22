@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA with Teaching Internal Timesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f7f4ef;
+    --accent: #c0392b;
+    --rule: #d0c9bc;
+    --muted: #7a7060;
+    --cell-bg: #ffffff;
+    --header-bg: #1a1a2e;
+    --header-fg: #f7f4ef;
+    --total-bg: #eae6df;
+    --section-bg: #2a2a4a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-size: 17px;
+    min-height: 100vh;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .page-wrap { max-width: 1060px; margin: 0 auto; animation: fadeUp 0.5s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .sheet-header {
+    background: var(--header-bg);
+    color: var(--header-fg);
+    padding: 1.8rem 2rem 1.4rem;
+    border-radius: 4px 4px 0 0;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .sheet-header h1 { font-size: 1.55rem; letter-spacing: 0.02em; line-height: 1.2; }
+  .sheet-header .sheet-note { font-size: 12px; opacity: 0.75; margin-top: 0.5rem; font-style: italic; line-height: 1.5; max-width: 700px; }
+  .sheet-header .subtitle { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
+
+  .meta-row {
+    background: var(--cell-bg);
+    border: 1px solid var(--rule); border-top: none;
+    padding: 1rem 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  }
+  .meta-field label { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .meta-field input { width: 100%; border: none; border-bottom: 1.5px solid var(--rule); background: transparent; font-family: 'Outfit', sans-serif; font-size: 17px; color: var(--ink); padding: 3px 0; outline: none; transition: border-color 0.2s; }
+  .meta-field input:focus { border-bottom-color: var(--accent); }
+
+  .section-header {
+    background: var(--section-bg);
+    color: var(--header-fg);
+    padding: 0.7rem 2rem;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-left: 4px solid var(--accent);
+  }
+
+  .timesheet-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  thead tr { background: var(--header-bg); color: var(--header-fg); }
+  thead th {
+    padding: 8px 7px; text-align: center;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 500; border-right: 1px solid rgba(255,255,255,0.08); white-space: nowrap;
+  }
+  thead th:last-child { border-right: none; }
+  thead th:first-child { text-align: left; padding-left: 14px; }
+
+  .day-label-row td {
+    background: #eae7e0; color: var(--ink);
+    font-size: 15px; padding: 5px 14px;
+    border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule);
+  }
+  .day-label-row .day-date-input {
+    border: none; border-bottom: 1px solid var(--rule); background: transparent;
+    font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--muted);
+    width: 108px; margin-left: 8px; outline: none; padding: 1px 2px;
+  }
+  .day-label-row .day-date-input:focus { border-bottom-color: var(--accent); }
+  .add-punch-btn {
+    float: right; font-family: 'Outfit', sans-serif; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px;
+    border: 1px solid var(--muted); border-radius: 2px; background: transparent;
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .add-punch-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(192,57,43,0.05); }
+
+  .clock-row td {
+    background: var(--cell-bg); border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule); padding: 4px 6px; vertical-align: middle;
+  }
+  .clock-row td:last-child { border-right: none; }
+  .clock-row.in-row td { border-bottom: 1px dashed #e8e2d8; }
+  .clock-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; padding-left: 14px !important; width: 100px; }
+
+  input[type="time"] {
+    border: none; border-bottom: 1px solid var(--rule); background: transparent;
+    font-family: 'Outfit', sans-serif; font-size: 14px; color: var(--ink);
+    width: 100%; padding: 2px 4px; outline: none; text-align: left; transition: border-color 0.2s;
+  }
+  input:focus { border-bottom-color: var(--accent) !important; }
+
+  .task-radio-cell { text-align: center; vertical-align: middle; }
+  .task-radio-cell input[type="radio"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+  .row-total { background: var(--total-bg) !important; font-weight: 600; text-align: center !important; color: var(--accent); font-size: 14px; white-space: nowrap; }
+
+  .remove-punch-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; line-height: 1; padding: 0 2px; transition: color 0.15s; display: block; margin: auto; }
+  .remove-punch-btn:hover { color: var(--accent); }
+  .desc-print-row { display: none; }
+
+  .repeat-header-row { background: var(--header-bg); color: var(--header-fg); }
+  .repeat-header-row th { padding: 8px 7px; text-align: center; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; border-right: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+  .repeat-header-row th:first-child { text-align: left; padding-left: 14px; }
+  @media print { .repeat-header-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+  .section-total-row td {
+    background: #f0ece4; color: var(--ink);
+    padding: 10px 10px; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule); text-align: center; font-size: 13px; font-weight: 500;
+  }
+  .section-total-row td:first-child { text-align: left; padding-left: 14px; font-size: 14px; border-left: none; }
+  .section-total-row td:last-child { border-right: none; }
+  .section-total-row .col-total { color: var(--ink); font-weight: 700; }
+  .section-total-row .section-grand { color: var(--accent); font-weight: 700; font-size: 14px; }
+
+  .combined-total-row td {
+    background: white; color: var(--ink);
+    padding: 14px 10px; border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+    border-right: 1px solid var(--rule); text-align: center; font-size: 13px; font-weight: 500;
+  }
+  .combined-total-row td:first-child { text-align: left; padding-left: 14px; font-size: 16px; border-left: none; }
+  .combined-total-row td:last-child { border-right: none; }
+  .combined-total-row .grand-total { color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; }
+
+  .spacer-row { height: 1.5rem; background: var(--paper); }
+
+  .comments-section { background: var(--cell-bg); border: 1px solid var(--rule); border-top: none; padding: 1rem 2rem; }
+  .comments-label { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .comments-section textarea { width: 100%; height: 72px; border: 1px solid var(--rule); border-radius: 2px; background: #fafaf8; font-family: 'Outfit', sans-serif; font-size: 15px; color: var(--ink); padding: 8px 10px; outline: none; resize: vertical; transition: border-color 0.2s; }
+  .comments-section textarea:focus { border-color: var(--accent); }
+
+  .sig-section { background: var(--cell-bg); border: 1px solid var(--rule); border-top: none; padding: 1.5rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .sig-field label { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .sig-pad-wrap { position: relative; border: 1.5px solid var(--rule); border-radius: 2px; background: #fafaf8; margin-bottom: 6px; display: inline-block; width: 100%; }
+  #sig-canvas { display: block; width: 100%; height: 80px; cursor: crosshair; touch-action: none; }
+  .sig-clear-btn { font-family: 'Outfit', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 2px; background: white; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .sig-clear-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sig-btn-group { display: flex; gap: 6px; margin: 6px 0 4px; }
+  .sig-upload-btn { font-family: 'Outfit', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 2px; background: white; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .sig-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sig-line { border-bottom: 1.5px solid var(--ink); height: 36px; }
+  .sig-hint { font-size: 12px; color: var(--muted); font-style: italic; }
+  .sig-date-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; }
+  .sig-date-label { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .sig-date-input { border: none; border-bottom: 1.5px solid var(--ink); background: transparent; font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--ink); padding: 1px 2px; outline: none; margin-left: 4px; }
+  .sig-date-input:focus { border-bottom-color: var(--accent); }
+
+  .actions { margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end; }
+  .btn { font-family: 'Outfit', sans-serif; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 22px; border: 1.5px solid var(--ink); border-radius: 2px; cursor: pointer; transition: all 0.18s; background: transparent; color: var(--ink); }
+  .btn:hover { background: var(--ink); color: var(--paper); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: #a93226; border-color: #a93226; }
+
+  .save-note { margin-top: 10px; font-size: 12px; color: var(--muted); font-style: italic; line-height: 1.5; text-align: right; }
+  @media print { .save-note { display: none; } }
+
+  @media print {
+    body { background: white; padding: 0; font-size: 13px; }
+    .page-wrap { max-width: 100%; }
+    .actions, .add-punch-btn, .remove-punch-btn { display: none !important; }
+    .sheet-header, thead tr, .day-label-row td, .row-total, .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    input { border: none !important; }
+    .sig-line { border-bottom: 1.5px solid black !important; }
+    .sig-pad-wrap { border: none !important; background: transparent !important; }
+    .sig-clear-btn, .sig-btn-group { display: none !important; }
+    #sig-canvas { border-bottom: 1.5px solid black; }
+    .spacer-row { height: 0.5rem; }
+    @page { margin: 0.45in 0.4in; size: letter landscape; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="sheet-header">
+    <div class="subtitle">Internal Document</div>
+    <h1>GTA with Teaching &mdash; Timesheet</h1>
+    <p class="sheet-note">Note: Complete an individual time punch for each task. Please include notes in the comment section including the date for any time listed as other.</p>
+  </div>
+
+  <div class="meta-row">
+    <div class="meta-field">
+      <label>Employee Name</label>
+      <input type="text" id="emp-name" placeholder="Full Name">
+    </div>
+    <div class="meta-field">
+      <label>Week of (Monday)</label>
+      <input type="date" id="week-of">
+    </div>
+  </div>
+
+  <!-- Section 1: Math Gym Duties -->
+  <div class="section-header">Section 1 &mdash; Math Gym Duties</div>
+  <div class="timesheet-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:100px;text-align:left;padding-left:14px">Day / Punch</th>
+          <th style="width:100px">Clock In</th>
+          <th style="width:100px">Clock Out</th>
+          <th style="width:62px;white-space:normal;line-height:1.3">Math Gym</th>
+          <th style="width:68px;white-space:normal;line-height:1.3">Virtual Math Gym</th>
+          <th style="width:60px">Lecture</th>
+          <th style="width:68px;white-space:normal;line-height:1.3">PD Meeting</th>
+          <th style="width:55px">Other</th>
+          <th style="width:55px">Total</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-s1"></tbody>
+    </table>
+  </div>
+
+  <!-- Section 2: Teaching Duties -->
+  <div class="section-header" style="margin-top:1.5rem;">Section 2 &mdash; Teaching Duties</div>
+  <div class="timesheet-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:100px;text-align:left;padding-left:14px">Day / Punch</th>
+          <th style="width:100px">Clock In</th>
+          <th style="width:100px">Clock Out</th>
+          <th style="width:68px;white-space:normal;line-height:1.3">Lecture Prep</th>
+          <th style="width:62px">Teaching</th>
+          <th style="width:68px;white-space:normal;line-height:1.3">Office Hour</th>
+          <th style="width:60px">Grading</th>
+          <th style="width:72px;white-space:normal;line-height:1.3">Course Meeting</th>
+          <th style="width:55px">Other</th>
+          <th style="width:55px">Total</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-s2"></tbody>
+    </table>
+  </div>
+
+  <!-- Combined Total -->
+  <table style="width:100%;border-collapse:collapse;margin-top:0;">
+    <tbody>
+      <tr class="combined-total-row" id="combined-row">
+        <td colspan="2">Combined Week Total</td>
+        <td class="grand-total" id="grand-total">0.00</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="comments-section" style="margin-top:0;">
+    <label class="comments-label">Comments / Notes</label>
+    <textarea id="comments" placeholder=""></textarea>
+  </div>
+
+  <div class="sig-section">
+    <div class="sig-field">
+      <label>Graduate Teaching Assistant Signature</label>
+      <div class="sig-pad-wrap">
+        <canvas id="sig-canvas" width="420" height="80"></canvas>
+      </div>
+      <div class="sig-btn-group">
+        <button class="sig-clear-btn" onclick="clearSig()">Clear</button>
+        <label class="sig-upload-btn">Upload Digital Signature
+          <input type="file" id="sig-upload" accept="image/*" style="display:none" onchange="loadSigImage(event)">
+        </label>
+      </div>
+      <div class="sig-date-row">
+        <span class="sig-hint">Sign above or upload a digital signature before submitting.</span>
+        <span class="sig-date-label">Date: <input type="date" id="gta-sig-date" class="sig-date-input"></span>
+      </div>
+    </div>
+    <div class="sig-field">
+      <label>Teaching Assistant Supervisor Signature</label>
+      <div class="sig-line"></div>
+      <div class="sig-date-row">
+        <span class="sig-hint">Supervisor approval required</span>
+        <span class="sig-date-label">Date: <span style="display:inline-block;width:100px;border-bottom:1px solid var(--ink);margin-left:4px;vertical-align:bottom;"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="clearAll()">Clear Form</button>
+    <button class="btn" onclick="saveProgress()">Save Progress</button>
+    <button class="btn btn-primary" onclick="exportPDF()">Export as PDF</button>
+  </div>
+  <div id="save-msg" style="text-align:right;font-size:12px;color:var(--muted);margin-top:6px;min-height:16px;"></div>
+  <p class="save-note">&#9432; Progress is saved to this browser and device only. Use the same browser on the same device to retrieve your saved data. Clicking <strong>Clear Form</strong> will permanently erase any saved progress.</p>
+
+</div>
+<script>
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const S1_COLS = ['math-gym','virt-gym','lecture','pd-meeting','other-s1'];
+const S2_COLS = ['lec-prep','teaching','office-hr','grading','course-mtg','other-s2'];
+const STORAGE_KEY = 'gta_teaching_timesheet_v2';
+const punchCount = { s1: {}, s2: {} };
+
+function buildTable() {
+  const t1 = document.getElementById('tbody-s1');
+  const t2 = document.getElementById('tbody-s2');
+  t1.innerHTML = ''; t2.innerHTML = '';
+  DAYS.forEach((day, di) => {
+    punchCount.s1[di] = 0; punchCount.s2[di] = 0;
+    insertDayLabel(t1, day, di, 's1', 9);
+    insertPunch(t1, di, 's1', S1_COLS);
+    insertDayLabel(t2, day, di, 's2', 10);
+    insertPunch(t2, di, 's2', S2_COLS);
+  });
+  insertSectionTotals(t1, 's1', S1_COLS, ['Math Gym','Virtual Math Gym','Lecture','PD Meeting','Other'], [62,68,60,68,55]);
+  insertSectionTotals(t2, 's2', S2_COLS, ['Lecture Prep','Teaching','Office Hour','Grading','Course Meeting','Other'], [68,62,68,60,72,55]);
+}
+
+function insertDayLabel(tbody, day, di, sec, colspan) {
+  const tr = document.createElement('tr');
+  tr.className = 'day-label-row';
+  tr.dataset.di = di;
+  tr.innerHTML = `<td colspan="${colspan}">
+    <strong>${day}</strong>
+    <input class="day-date-input" type="date" id="date-${sec}-${di}">
+    <button class="add-punch-btn" onclick="addPunch(${di},'${sec}')">+ Add Punch</button>
+  </td>`;
+  tbody.appendChild(tr);
+}
+
+function insertPunch(tbody, di, sec, cols) {
+  const p = punchCount[sec][di]++;
+  const nextDayLabel = tbody.querySelector(`.day-label-row[data-di="${di + 1}"]`);
+  const anchor = nextDayLabel || document.getElementById(`totals-${sec}`);
+
+  const tr = document.createElement('tr');
+  tr.className = 'clock-row in-row';
+  tr.id = `in-${sec}-${di}-${p}`;
+  tr.innerHTML = `
+    <td class="clock-label">Punch ${p + 1}</td>
+    <td><input type="time" id="ci-${sec}-${di}-${p}" onchange="recalc('${sec}',${di},${p})"></td>
+    <td><input type="time" id="co-${sec}-${di}-${p}" onchange="recalc('${sec}',${di},${p})"></td>
+    ${cols.map(c => `<td class="task-radio-cell"><input type="radio" name="task-${sec}-${di}-${p}" value="${c}" onchange="recalc('${sec}',${di},${p})"></td>`).join('')}
+    <td class="row-total" id="rt-${sec}-${di}-${p}">\u2014</td>
+    ${p > 0 ? `<td style="text-align:center;vertical-align:middle;background:var(--cell-bg);border-right:none;width:28px"><button class="remove-punch-btn" onclick="removePunch('${sec}',${di},${p})" title="Remove">\u00d7</button></td>` : ''}`;
+
+  if (anchor) tbody.insertBefore(tr, anchor);
+  else tbody.appendChild(tr);
+}
+
+function insertSectionTotals(tbody, sec, cols, labels, widths) {
+  const htr = document.createElement('tr');
+  htr.className = 'repeat-header-row';
+  htr.innerHTML = `<th colspan="3"></th>` +
+    labels.map((l,i) => `<th style="width:${widths[i]}px;white-space:normal;line-height:1.3">${l}</th>`).join('') +
+    `<th style="width:55px">Total</th>`;
+  tbody.appendChild(htr);
+
+  const tr = document.createElement('tr');
+  tr.className = 'section-total-row';
+  tr.id = `totals-${sec}`;
+  tr.innerHTML = `<td colspan="3">Section Total</td>` +
+    cols.map(c => `<td class="col-total" id="ct-${sec}-${c}">0.00</td>`).join('') +
+    `<td class="section-grand" id="st-${sec}">0.00</td>`;
+  tbody.appendChild(tr);
+}
+
+function addPunch(di, sec) {
+  const cols = sec === 's1' ? S1_COLS : S2_COLS;
+  const tbody = document.getElementById(`tbody-${sec}`);
+  insertPunch(tbody, di, sec, cols);
+}
+
+function removePunch(sec, di, p) {
+  document.getElementById(`in-${sec}-${di}-${p}`)?.remove();
+  calcTotals();
+}
+
+function punchHours(sec, di, p) {
+  const ci = document.getElementById(`ci-${sec}-${di}-${p}`)?.value;
+  const co = document.getElementById(`co-${sec}-${di}-${p}`)?.value;
+  if (!ci || !co) return 0;
+  const [ih, im] = ci.split(':').map(Number);
+  const [oh, om] = co.split(':').map(Number);
+  const mins = (oh * 60 + om) - (ih * 60 + im);
+  return mins > 0 ? Math.round(mins / 60 * 100) / 100 : 0;
+}
+
+function recalc(sec, di, p) {
+  const hours = punchHours(sec, di, p);
+  const rt = document.getElementById(`rt-${sec}-${di}-${p}`);
+  const checked = document.querySelector(`input[name="task-${sec}-${di}-${p}"]:checked`);
+  if (rt) rt.textContent = (hours > 0 && checked) ? hours.toFixed(2) : '\u2014';
+  calcTotals();
+}
+
+function calcTotals() {
+  let grandTotal = 0;
+
+  ['s1','s2'].forEach(sec => {
+    const cols = sec === 's1' ? S1_COLS : S2_COLS;
+    const colSums = {};
+    cols.forEach(c => { colSums[c] = 0; });
+
+    document.querySelectorAll(`[id^="ci-${sec}-"]`).forEach(el => {
+      const parts = el.id.split('-');
+      const di = parts[2], p = parts[3];
+      const hours = punchHours(sec, di, p);
+      const checked = document.querySelector(`input[name="task-${sec}-${di}-${p}"]:checked`);
+      if (hours > 0 && checked) colSums[checked.value] = (colSums[checked.value] || 0) + hours;
+    });
+
+    let secTotal = 0;
+    cols.forEach(c => {
+      const ct = document.getElementById(`ct-${sec}-${c}`);
+      if (ct) ct.textContent = colSums[c].toFixed(2);
+      secTotal += colSums[c];
+    });
+    const st = document.getElementById(`st-${sec}`);
+    if (st) st.textContent = secTotal.toFixed(2);
+    grandTotal += secTotal;
+  });
+
+  const g = document.getElementById('grand-total');
+  if (g) g.textContent = grandTotal.toFixed(2);
+}
+
+function clearAll() {
+  if (!confirm('Clear all entered data? This will also clear any saved progress.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('emp-name').value = '';
+  document.getElementById('week-of').value = '';
+  document.getElementById('comments').value = '';
+  document.getElementById('gta-sig-date').value = '';
+  clearSig();
+  buildTable();
+  document.getElementById('save-msg').textContent = '';
+}
+
+function exportPDF() {
+  const name = document.getElementById('emp-name').value.trim();
+  const weekOf = document.getElementById('week-of').value;
+  let title = 'GTA_Teaching_Timesheet';
+  if (name) {
+    const parts = name.split(/\s+/);
+    title = 'GTA_Teaching_Timesheet_' + (parts.length > 1 ? parts[parts.length-1] + '_' + parts.slice(0,-1).join('_') : parts[0]);
+  }
+  if (weekOf) title += '_Week_' + weekOf;
+  const prev = document.title;
+  document.title = title;
+  window.print();
+  setTimeout(() => { document.title = prev; }, 1000);
+}
+
+(function() {
+  const canvas = document.getElementById('sig-canvas'); if (!canvas) return;
+  const ctx = canvas.getContext('2d'); let drawing = false, lastX = 0, lastY = 0;
+  function getPos(e) { const rect = canvas.getBoundingClientRect(); const sx = canvas.width/rect.width, sy = canvas.height/rect.height; if (e.touches) return { x:(e.touches[0].clientX-rect.left)*sx, y:(e.touches[0].clientY-rect.top)*sy }; return { x:(e.clientX-rect.left)*sx, y:(e.clientY-rect.top)*sy }; }
+  function startDraw(e) { e.preventDefault(); drawing=true; const pos=getPos(e); lastX=pos.x; lastY=pos.y; ctx.beginPath(); ctx.arc(lastX,lastY,0.8,0,Math.PI*2); ctx.fillStyle='#1a1a2e'; ctx.fill(); }
+  function draw(e) { if(!drawing) return; e.preventDefault(); const pos=getPos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(pos.x,pos.y); ctx.strokeStyle='#1a1a2e'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke(); lastX=pos.x; lastY=pos.y; }
+  function stopDraw() { drawing=false; }
+  canvas.addEventListener('mousedown',startDraw); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stopDraw); canvas.addEventListener('mouseleave',stopDraw);
+  canvas.addEventListener('touchstart',startDraw,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stopDraw);
+})();
+
+function loadSigImage(event) {
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e) { const canvas=document.getElementById('sig-canvas'),ctx=canvas.getContext('2d'),img=new Image(); img.onload=function(){ctx.clearRect(0,0,canvas.width,canvas.height);const scale=Math.min(canvas.width/img.width,canvas.height/img.height);ctx.drawImage(img,(canvas.width-img.width*scale)/2,(canvas.height-img.height*scale)/2,img.width*scale,img.height*scale);}; img.src=e.target.result; event.target.value=''; };
+  reader.readAsDataURL(file);
+}
+function clearSig() { const c=document.getElementById('sig-canvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
+
+function saveProgress() {
+  const data = {
+    name: document.getElementById('emp-name').value,
+    weekOf: document.getElementById('week-of').value,
+    comments: document.getElementById('comments').value,
+    sigDate: document.getElementById('gta-sig-date').value,
+    sig: document.getElementById('sig-canvas').toDataURL(),
+    punches: { s1: {}, s2: {} }
+  };
+  ['s1','s2'].forEach(sec => {
+    DAYS.forEach((_, di) => {
+      data.punches[sec][di] = [];
+      for (let p = 0; p < punchCount[sec][di]; p++) {
+        const checked = document.querySelector(`input[name="task-${sec}-${di}-${p}"]:checked`);
+        data.punches[sec][di].push({ ci: document.getElementById(`ci-${sec}-${di}-${p}`)?.value||'', co: document.getElementById(`co-${sec}-${di}-${p}`)?.value||'', task: checked ? checked.value : '' });
+      }
+    });
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const msg = document.getElementById('save-msg');
+  msg.textContent = 'Progress saved at ' + new Date().toLocaleTimeString();
+  setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
+function loadProgress() {
+  const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+  const data = JSON.parse(raw);
+  document.getElementById('emp-name').value = data.name || '';
+  document.getElementById('week-of').value = data.weekOf || '';
+  document.getElementById('comments').value = data.comments || '';
+  document.getElementById('gta-sig-date').value = data.sigDate || '';
+  if (data.sig && data.sig !== 'data:,') { const canvas=document.getElementById('sig-canvas'),ctx=canvas.getContext('2d'),img=new Image(); img.onload=()=>ctx.drawImage(img,0,0); img.src=data.sig; }
+  if (data.weekOf) {
+    const mon = new Date(data.weekOf + 'T00:00:00');
+    if (!isNaN(mon)) DAYS.forEach((_, di) => { const d=new Date(mon); d.setDate(mon.getDate()+di); ['s1','s2'].forEach(sec => { const el=document.getElementById(`date-${sec}-${di}`); if(el) el.value=d.toISOString().split('T')[0]; }); });
+  }
+  if (data.punches) {
+    ['s1','s2'].forEach(sec => {
+      const cols = sec === 's1' ? S1_COLS : S2_COLS;
+      DAYS.forEach((_, di) => {
+        const punches = data.punches[sec]?.[di] || [];
+        for (let p = 1; p < punches.length; p++) insertPunch(document.getElementById(`tbody-${sec}`), di, sec, cols);
+        punches.forEach((punch, p) => {
+          const ci=document.getElementById(`ci-${sec}-${di}-${p}`), co=document.getElementById(`co-${sec}-${di}-${p}`);
+          if(ci) ci.value=punch.ci; if(co) co.value=punch.co;
+          if(punch.task) { const radio=document.querySelector(`input[name="task-${sec}-${di}-${p}"][value="${punch.task}"]`); if(radio) radio.checked=true; }
+          recalc(sec, di, p);
+        });
+      });
+    });
+  }
+  calcTotals();
+}
+
+buildTable();
+loadProgress();
+
+document.getElementById('week-of').addEventListener('change', function() {
+  const mon = new Date(this.value + 'T00:00:00'); if (isNaN(mon)) return;
+  DAYS.forEach((_, di) => { const d=new Date(mon); d.setDate(mon.getDate()+di); ['s1','s2'].forEach(sec => { const el=document.getElementById(`date-${sec}-${di}`); if(el) el.value=d.toISOString().split('T')[0]; }); });
+});
+</script>
+</body>
+</html>

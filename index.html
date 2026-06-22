@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Gym Timesheets</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f7f4ef;
+    --accent: #c0392b;
+    --rule: #d0c9bc;
+    --muted: #7a7060;
+    --card-bg: #ffffff;
+    --header-bg: #1a1a2e;
+    --header-fg: #f7f4ef;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .page-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hub-header {
+    background: var(--header-bg);
+    color: var(--header-fg);
+    padding: 2rem 2.5rem 1.8rem;
+    border-radius: 4px 4px 0 0;
+  }
+  .hub-header .subtitle {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 0.4rem;
+  }
+  .hub-header h1 {
+    font-size: 1.8rem;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .hub-header p {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 0.6rem;
+    line-height: 1.5;
+  }
+
+  .cards {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-top: none;
+    padding: 2rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 600px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.4rem 1.6rem 1.2rem;
+    background: #fafaf8;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--rule);
+    transition: background 0.18s;
+  }
+  .card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(192,57,43,0.08); }
+  .card:hover::before { background: var(--accent); }
+
+  .card-tag {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .card-arrow {
+    margin-top: auto;
+    padding-top: 0.8rem;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .card.has-stipend .card-tag { color: var(--accent); }
+
+  .footer-note {
+    margin-top: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-top: none;
+    padding: 0.9rem 2.5rem;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="hub-header">
+    <div class="subtitle">Internal Document</div>
+    <h1>Math Gym Timesheets</h1>
+    <p>Select the timesheet that matches your role for the current week. Each form saves progress to your browser automatically.</p>
+  </div>
+
+  <div class="cards">
+
+    <a class="card" href="gta.html">
+      <span class="card-tag">Math Gym Duties</span>
+      <h2>GTA</h2>
+      <p>Math Gym, Virtual Math Gym, Lecture, PD Meeting, and Other.</p>
+      <div class="card-arrow">Open Timesheet &#8250;</div>
+    </a>
+
+    <a class="card has-stipend" href="gta-shift-leader.html">
+      <span class="card-tag">Math Gym Duties + Shift Leader Stipend</span>
+      <h2>GTA &amp; Shift Leader</h2>
+      <p>Math Gym, Virtual Math Gym, Lecture, PD Meeting, and Other. Includes automatic 1-hour Shift Leader stipend for weeks worked.</p>
+      <div class="card-arrow">Open Timesheet &#8250;</div>
+    </a>
+
+    <a class="card" href="gta-teaching.html">
+      <span class="card-tag">Math Gym Duties + Teaching Duties</span>
+      <h2>GTA with Teaching</h2>
+      <p>Two sections: Math Gym duties and Teaching duties (Lecture Prep, Teaching, Office Hour, Grading, Course Meeting). Combined total at the end.</p>
+      <div class="card-arrow">Open Timesheet &#8250;</div>
+    </a>
+
+    <a class="card has-stipend" href="gta-teaching-shift-leader.html">
+      <span class="card-tag">Math Gym Duties + Teaching Duties + Shift Leader Stipend</span>
+      <h2>GTA with Teaching &amp; Shift Leader</h2>
+      <p>Full two-section timesheet with combined total. Includes automatic 1-hour Shift Leader stipend for weeks worked.</p>
+      <div class="card-arrow">Open Timesheet &#8250;</div>
+    </a>
+
+  </div>
+
+  <div class="footer-note">
+    &#9432; Each timesheet saves progress to this browser and device only. Use the same browser on the same device each week to retrieve saved data. If you are unsure which form to use, contact your supervisor.
+  </div>
+
+</div>
+</body>
+</html>
