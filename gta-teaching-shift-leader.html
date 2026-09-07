@@ -227,6 +227,7 @@
           <th style="width:68px;white-space:normal;line-height:1.3">Virtual Math Gym</th>
           <th style="width:60px">Lecture</th>
           <th style="width:68px;white-space:normal;line-height:1.3">PD Meeting</th>
+          <th style="width:60px">Grading</th>
           <th style="width:55px">Other</th>
           <th style="width:55px">Total</th>
         </tr>
@@ -318,23 +319,25 @@
 </div>
 <script>
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const S1_COLS = ['math-gym','virt-gym','lecture','pd-meeting','other-s1'];
+const S1_COLS = ['math-gym','virt-gym','lecture','pd-meeting','grading','other-s1'];
 const S2_COLS = ['lec-prep','teaching','office-hr','grading','course-mtg','other-s2'];
 const STORAGE_KEY = 'gta_teaching_sl_timesheet_v2';
 const punchCount = { s1: {}, s2: {} };
+let selectedTask = {};
 
 function buildTable() {
   const t1 = document.getElementById('tbody-s1');
   const t2 = document.getElementById('tbody-s2');
   t1.innerHTML = ''; t2.innerHTML = '';
+  selectedTask = {};
   DAYS.forEach((day, di) => {
     punchCount.s1[di] = 0; punchCount.s2[di] = 0;
-    insertDayLabel(t1, day, di, 's1', 9);
+    insertDayLabel(t1, day, di, 's1', 10);
     insertPunch(t1, di, 's1', S1_COLS);
     insertDayLabel(t2, day, di, 's2', 10);
     insertPunch(t2, di, 's2', S2_COLS);
   });
-  insertSectionTotals(t1, 's1', S1_COLS, ['Math Gym','Virtual Math Gym','Lecture','PD Meeting','Other'], [62,68,60,68,55]);
+  insertSectionTotals(t1, 's1', S1_COLS, ['Math Gym','Virtual Math Gym','Lecture','PD Meeting','Grading','Other'], [62,68,60,68,60,55]);
   insertSectionTotals(t2, 's2', S2_COLS, ['Lecture Prep','Teaching','Office Hour','Grading','Course Meeting','Other'], [68,62,68,60,72,55]);
 }
 
@@ -362,7 +365,7 @@ function insertPunch(tbody, di, sec, cols) {
     <td class="clock-label">Punch ${p + 1}</td>
     <td><input type="time" id="ci-${sec}-${di}-${p}" onchange="recalc('${sec}',${di},${p})"></td>
     <td><input type="time" id="co-${sec}-${di}-${p}" onchange="recalc('${sec}',${di},${p})"></td>
-    ${cols.map(c => `<td class="task-radio-cell"><input type="radio" name="task-${sec}-${di}-${p}" value="${c}" onchange="recalc('${sec}',${di},${p})"></td>`).join('')}
+    ${cols.map(c => `<td class="task-radio-cell"><input type="radio" name="task-${sec}-${di}-${p}" value="${c}" onclick="toggleTask(this,'${sec}',${di},${p})"></td>`).join('')}
     <td class="row-total" id="rt-${sec}-${di}-${p}">\u2014</td>
     ${p > 0 ? `<td style="text-align:center;vertical-align:middle;background:var(--cell-bg);border-right:none;width:28px"><button class="remove-punch-btn" onclick="removePunch('${sec}',${di},${p})" title="Remove">\u00d7</button></td>` : ''}`;
 
@@ -385,6 +388,17 @@ function insertSectionTotals(tbody, sec, cols, labels, widths) {
     cols.map(c => `<td class="col-total" id="ct-${sec}-${c}">0.00</td>`).join('') +
     `<td class="section-grand" id="st-${sec}">0.00</td>`;
   tbody.appendChild(tr);
+}
+
+function toggleTask(el, sec, di, p) {
+  const key = sec + '-' + di + '-' + p;
+  if (selectedTask[key] === el.value) {
+    el.checked = false;
+    selectedTask[key] = null;
+  } else {
+    selectedTask[key] = el.value;
+  }
+  recalc(sec, di, p);
 }
 
 function addPunch(di, sec) {
@@ -545,7 +559,7 @@ function loadProgress() {
         punches.forEach((punch, p) => {
           const ci=document.getElementById(`ci-${sec}-${di}-${p}`), co=document.getElementById(`co-${sec}-${di}-${p}`);
           if(ci) ci.value=punch.ci; if(co) co.value=punch.co;
-          if(punch.task) { const radio=document.querySelector(`input[name="task-${sec}-${di}-${p}"][value="${punch.task}"]`); if(radio) radio.checked=true; }
+          if(punch.task) { const radio=document.querySelector(`input[name="task-${sec}-${di}-${p}"][value="${punch.task}"]`); if(radio) { radio.checked=true; selectedTask[`${sec}-${di}-${p}`] = punch.task; } }
           recalc(sec, di, p);
         });
       });
